@@ -117,11 +117,12 @@ def calculate():
     final_wo = CompositeVideoClip(images).fx(vfx.fadein, 1)
     final = final_wo.set_audio(bmk)
     final.write_videofile("/Users/umuttengiz/Desktop/done.mp4", codec="libx264", audio_codec="aac")
-file = "/Users/umuttengiz/Code Testing/Reddit Shorts Bot/audio"
-file1 = "/Users/umuttengiz/Code Testing/Reddit Shorts Bot/comments"
-file2 = "/Users/umuttengiz/Code Testing/Reddit Shorts Bot/users"
-file3 = "/Users/umuttengiz/Code Testing/Reddit Shorts Bot/main_post"
-file4 = "/Users/umuttengiz/Code Testing/Reddit Shorts Bot/title.mp3"
+dir = os.getcwd()
+file = os.path.join(dir, "audio")
+file1 = os.path.join(dir, "comments")
+file2 = os.path.join(dir, "users")
+file3 = os.path.join(dir, "main_post")
+file4 = os.path.join(dir, "title.mp3")
 def clean_up():
     print("Cleaning up the folder")
     for i in os.listdir(file):
@@ -148,8 +149,8 @@ while True:
     elif answer == "2":
         fetch_submission()
         break
-
 text_to_speech()
 screen_shot()
 calculate()
 clean_up()
+
