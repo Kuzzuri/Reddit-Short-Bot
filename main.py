@@ -6,7 +6,7 @@ from math import ceil
 from playwright.sync_api import sync_playwright, Playwright
 from moviepy.editor import *
 import os
-
+from random import randint
 reddit = praw.Reddit(
     client_id = "gEuZsqs-ZYcV3ueKSrsV_Q",
     client_secret = "wKLAqtnx91UWtHJIZ7EFRRw_QREsSA",
@@ -30,7 +30,7 @@ def fetch_selected():
         if comment_counter >= 10:
             break
         else:
-            if isinstance(comment, praw.models.MoreComments) or comment.stickied:
+            if isinstance(comment, praw.models.MoreComments) or comment.stickied or len(comment.body) > 150:
                 continue
             comment_counter += 1
             comment_dic[comment_counter] = comment.body, comment.id
@@ -55,13 +55,14 @@ def fetch_submission():
     submission.comment_sort = "top"
     submission.comments.replace_more(limit = 0)
     for comment in submission.comments:
-        if comment_counter >= 10:
+        if len(comment_dic) == 10:
             break
         else:
-            if isinstance(comment, praw.models.MoreComments) or comment.stickied:
+            if isinstance(comment, praw.models.MoreComments) or comment.stickied or len(comment.body) > 150:
                 continue
-            comment_counter += 1
-            comment_dic[comment_counter] = comment.body, comment.id
+            else:
+                comment_counter += 1
+                comment_dic[comment_counter] = comment.body, comment.id
 
 def text_to_speech():
     print("Creating the audios")
@@ -108,11 +109,13 @@ def calculate():
         header = ImageClip(f"users/comment_user{index}.png").set_start(audio_stamps).set_duration(audio.duration).set_position((50,500))
         images.append(img)
         images.append(header)
-        audio_stamps += ceil(audio.duration)
+        audio_stamps += audio.duration
         amk += audio.duration
-    bmk = CompositeAudioClip(audios)
     length = amk + title_audio.duration
-    vid = VideoFileClip("video.mp4").subclip(10,length + 15)
+    audios.append(AudioFileClip("music.mp3").set_duration(length).fx(afx.volumex, 0.1))
+    bmk = CompositeAudioClip(audios)
+    random = randint(1,3)
+    vid = VideoFileClip(f"video/{random}.mp4").subclip(10,length + 11)
     images.insert(0,vid)
     final_wo = CompositeVideoClip(images).fx(vfx.fadein, 1)
     final = final_wo.set_audio(bmk)
