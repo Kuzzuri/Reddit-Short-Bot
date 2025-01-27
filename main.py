@@ -2,7 +2,6 @@ import praw
 import praw.models
 import gtts 
 import playwright
-from math import ceil
 from playwright.sync_api import sync_playwright, Playwright
 from moviepy.editor import *
 import os
@@ -27,10 +26,10 @@ def fetch_selected():
     submission.comment_sort = "top"
     submission.comments.replace_more(limit = 0)
     for comment in submission.comments:
-        if comment_counter >= 10:
+        if comment_counter == 10:
             break
         else:
-            if isinstance(comment, praw.models.MoreComments) or comment.stickied or len(comment.body) > 150:
+            if isinstance(comment, praw.models.MoreComments) or comment.stickied or len(comment.body) > 150 or comment.body == "[removed]":
                 continue
             comment_counter += 1
             comment_dic[comment_counter] = comment.body, comment.id
@@ -58,7 +57,7 @@ def fetch_submission():
         if len(comment_dic) == 10:
             break
         else:
-            if isinstance(comment, praw.models.MoreComments) or comment.stickied or len(comment.body) > 150:
+            if isinstance(comment, praw.models.MoreComments) or comment.stickied or len(comment.body) > 150 or comment.body == "[removed]":
                 continue
             else:
                 comment_counter += 1
@@ -74,6 +73,7 @@ def text_to_speech():
         comment_text = gtts.gTTS(text = text, lang="en", slow=False)
         comment_text.save(f"audio/comment{num + 1}.mp3")
         print(f"Audios Created {num + 1}/10")
+
 def screen_shot():
     print("Getting the screenshots")
     id = 0
@@ -92,7 +92,6 @@ def screen_shot():
             page.locator("summary.grid.grid-cols-\\[24px_minmax\\(0\\,1fr\\)\\].xs\\:grid-cols-\\[32px_minmax\\(0\\,1fr\\)\\]").nth(0).screenshot(path=f"users/comment_user{id}.png")
             page.locator("div.md.text-14.rounded-\\[8px\\].pb-2xs.overflow-hidden").nth(0).screenshot(path=f"comments/comment{id}.png")
             
-
 def calculate():
     print("Editing the video")
     title_audio = AudioFileClip("title.mp3")
@@ -112,7 +111,7 @@ def calculate():
         audio_stamps += audio.duration
         amk += audio.duration
     length = amk + title_audio.duration
-    audios.append(AudioFileClip("music.mp3").set_duration(length).fx(afx.volumex, 0.1))
+    audios.append(AudioFileClip("music.mp3").set_duration(length + 1).fx(afx.volumex, 0.1))
     bmk = CompositeAudioClip(audios)
     random = randint(1,3)
     vid = VideoFileClip(f"video/{random}.mp4").subclip(10,length + 11)
@@ -152,8 +151,10 @@ while True:
     elif answer == "2":
         fetch_submission()
         break
+
 text_to_speech()
 screen_shot()
 calculate()
 clean_up()
+
 
