@@ -6,6 +6,7 @@ from playwright.sync_api import sync_playwright, Playwright
 from moviepy.editor import *
 import os
 from random import randint
+import time
 reddit = praw.Reddit(
     client_id = "gEuZsqs-ZYcV3ueKSrsV_Q",
     client_secret = "wKLAqtnx91UWtHJIZ7EFRRw_QREsSA",
@@ -62,6 +63,28 @@ def fetch_submission():
             else:
                 comment_counter += 1
                 comment_dic[comment_counter] = comment.body, comment.id
+def story_mode():
+    global url
+    global title
+    global comment_dic
+    global comment
+    comment_counter  = 0
+    comment_dic = {}
+    selected = input("Enter submission id: ")
+    submission = reddit.submission(selected)
+    print("Fetching data from reddit")
+    url = submission.url
+    title = submission.title
+    submission.comment_sort = "top"
+    submission.comments.replace_more(limit = 0)
+    for comment in submission.comments:
+        if comment_counter == 1:
+            break
+        else:
+            if isinstance(comment, praw.models.MoreComments) or comment.stickied or len(comment.body) > 2500 or len(comment.body) < 1000 or comment.body == "[removed]":
+                continue
+            comment_counter += 1
+            comment_dic[comment_counter] = comment.body, comment.id
 
 def text_to_speech():
     print("Creating the audios")
@@ -73,7 +96,6 @@ def text_to_speech():
         comment_text = gtts.gTTS(text = text, lang="en", slow=False)
         comment_text.save(f"audio/comment{num + 1}.mp3")
         print(f"Audios Created {num + 1}/10")
-
 def screen_shot():
     print("Getting the screenshots")
     id = 0
@@ -83,15 +105,33 @@ def screen_shot():
         page.goto(url)
         page.locator("div.flex.justify-between.text-12.px-md.relative.xs\\:px-0.pb-2xs.pt-md").screenshot(path="main_post/auhtor.png")
         page.locator("h1.font-semibold.text-neutral-content-strong.m-0.text-18.xs\\:text-24.mb-xs.px-md.xs\\:px-0.xs\\:mb-md.overflow-hidden").screenshot(path="main_post/title.png")
+        annen = page.locator('path[d="M10.625 9.375H14v1.25h-3.375V14h-1.25v-3.375H6v-1.25h3.375V6h1.25v3.375ZM20 10A10 10 0 1 1 10 0a10.011 10.011 0 0 1 10 10Zm-1.25 0A8.75 8.75 0 1 0 10 18.75 8.76 8.76 0 0 0 18.75 10Z"]')
+        locators = page.locator('shreddit-comment[collapsed]')
+
+
         for id in range(len(comment_dic)):
             id += 1
             trimed_url = url.split("/")
             new_url = "/".join(trimed_url[0:7]) 
             finished_url = new_url + "/comment/" + f"{comment_dic[id][1]}"
             page.goto(finished_url)
+            time.sleep(3)
+            if locators.count() == 1:
+                element_handle = locators.element_handle()  
+                page.evaluate(
+                'el => { el.removeAttribute("collapsed"); el.setAttribute("open", ""); }',
+                element_handle  
+                )
             page.locator("summary.grid.grid-cols-\\[24px_minmax\\(0\\,1fr\\)\\].xs\\:grid-cols-\\[32px_minmax\\(0\\,1fr\\)\\]").nth(0).screenshot(path=f"users/comment_user{id}.png")
             page.locator("div.md.text-14.rounded-\\[8px\\].pb-2xs.overflow-hidden").nth(0).screenshot(path=f"comments/comment{id}.png")
+                
+
             
+
+
+
+            
+
 def calculate():
     print("Editing the video")
     title_audio = AudioFileClip("title.mp3")
@@ -144,13 +184,21 @@ def clean_up():
         os.remove(file_path)
     os.remove(file4)
 while True:
-    answer = input("Do you want to enter a submission or subreddit(1/2): ")
-    if answer == "1":
-        fetch_selected()
+    answer = input("Story mode on or off(y/n): ")
+    if answer == "y":
+        story_mode()
         break
-    elif answer == "2":
-        fetch_submission()
+    elif answer == "n":
         break
+if answer == "n":
+    while True:
+        answer = input("Do you want to enter a submission or subreddit(1/2): ")
+        if answer == "1":
+            fetch_selected()
+            break
+        elif answer == "2":
+            fetch_submission()
+            break
 
 text_to_speech()
 screen_shot()
